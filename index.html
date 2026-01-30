@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoboGene: Diversity-Driven Agentic Framework for VLA Pre-training</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        /* ========================================
+           CSS 变量与核心样式 (统一管理)
+           ======================================== */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --accent-primary: #2c5282;
+            --accent-secondary: #f8b0b0;
+            --accent-gradient: linear-gradient(135deg, #2c5282 0%, #f8b0b0 100%);
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+            --border-radius: 12px;
+            --border-radius-lg: 24px;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.02);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(44, 82, 130, 0.1);
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 基础重置 */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); line-height: 1.75; overflow-x: hidden; }
+
+        /* 排版 */
+        h1, h2, h3 { font-family: 'Playfair Display', serif; font-weight: 700; line-height: 1.2; }
+        h1 { font-size: clamp(2.8rem, 5vw, 4.5rem); background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-primary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        h2 { font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 1.5rem; position: relative; display: inline-block; }
+        h2::after { content: ''; position: absolute; bottom: -10px; left: 0; width: 60px; height: 4px; background: var(--accent-gradient); border-radius: 2px; }
+        p { font-size: 1.05rem; color: var(--text-secondary); margin-bottom: 1.5rem; max-width: 75ch; }
+        strong { color: var(--accent-primary); font-weight: 700; }
+
+        /* 布局 */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+        section { padding: 100px 0; border-bottom: 1px solid var(--border-color); }
+        section:nth-child(even) { background-color: var(--bg-secondary); }
+
+        /* 导航栏 */
+        nav { position: fixed; top: 0; width: 100%; z-index: 1000; padding: 1rem 0; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-color); box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .nav-links { display: flex; justify-content: center; gap: 2rem; }
+        .nav-links a { color: var(--text-secondary); font-weight: 600; font-size: 0.95rem; text-decoration: none; transition: var(--transition); }
+        .nav-links a:hover { color: var(--accent-primary); transform: translateY(-1px); }
+
+        /* 英雄板块 */
+        .hero { min-height: 90vh; display: flex; align-items: center; justify-content: center; padding-top: 8rem; text-align: center; }
+        .hero-badge { display: inline-block; padding: 0.6rem 1.5rem; background: rgba(44, 82, 130, 0.08); color: var(--accent-primary); border-radius: 50px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2rem; }
+        .hero-image { margin-top: 4rem; }
+        .hero-image img { width: 100%; max-width: 1000px; border-radius: var(--border-radius-lg); box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-color); }
+
+        /* 卡片与组件 */
+        .abstract-card { padding: 3rem; max-width: 900px; margin: 0 auto; background: var(--bg-primary); border: 1px solid var(--border-color); border-top: 3px solid var(--accent-primary); border-radius: var(--border-radius); box-shadow: var(--shadow-md); }
+        .overview-image { width: 100%; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); }
+
+        /* 视频网格系统 */
+        .video-grid { display: grid; gap: 2.5rem; margin-top: 2rem; }
+        .mode-2x2 { grid-template-columns: repeat(2, 1fr); max-width: 1000px; margin-inline: auto; }
+        .mode-3x3 { grid-template-columns: repeat(3, 1fr); max-width: 1200px; margin-inline: auto; }
+        
+        .video-card { background: #fff; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: var(--shadow-md); padding: 1.5rem; text-align: center; transition: var(--transition); }
+        .video-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); border-color: rgba(59, 130, 246, 0.3); }
+        .video-card video { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; margin-bottom: 1rem; }
+        .video-card p { margin-bottom: 0; font-weight: 700; color: var(--text-primary); }
+
+        /* 方法论卡片 */
+        .method-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-top: 3rem; }
+        .method-card { padding: 2.5rem; background: #fff; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: var(--shadow-md); transition: var(--transition); position: relative; overflow: hidden; }
+        .method-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+        .method-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--accent-gradient); opacity: 0; transition: 0.3s; }
+        .method-card:hover::before { opacity: 1; }
+        .method-card-number { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700; color: var(--accent-secondary); display: block; margin-bottom: 1rem; }
+
+        /* 实验统计 */
+        .experiment-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 3rem; }
+        .stat-card { padding: 2rem; text-align: center; background: #fff; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: var(--shadow-md); transition: 0.3s; }
+        .stat-number { font-family: 'Playfair Display', serif; font-size: 3rem; font-weight: 700; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block; }
+        .stat-label { font-size: 0.9rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* 混合布局 (泛化性分析) */
+        .mixed-layout { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: center; margin-top: 2rem; }
+        .chart-card { background: #fff; border-radius: 16px; padding: 1.5rem; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); text-align: center; }
+        .chart-card img { width: 100%; height: auto; border-radius: 8px; }
+        .video-grid-mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .video-card.small { padding: 0.8rem; }
+        .video-card.small p { font-size: 0.85rem; margin-top: 0.5rem; }
+
+        /* 动画 */
+        .fade-in { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+        /* 响应式适配 */
+        @media (max-width: 1024px) {
+            .nav-links { display: none; }
+            .mixed-layout, .mode-3x3 { grid-template-columns: 1fr; }
+            .video-grid-mini { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="container">
+            <div class="nav-links">
+                <a href="#abstract">Abstract</a>
+                <a href="#methodology">Methodology</a>
+                <a href="#experiments">Experiments</a>
+                <a href="#diverse-tasks">Diverse Tasks</a>
+                <a href="#results">Results</a>
+                <a href="#generalization">Generalization</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero" id="home">
+        <div class="container hero-content">
+            <span class="hero-badge fade-in">Diversity-driven agentic framework integrated with self-reflection and memory</span>
+            <h1 class="fade-in">RoboGene: Boosting VLA Pre-training via Diversity-Driven Agentic Framework</h1>
+            <p class="fade-in" style="margin-inline: auto;">An automated framework for generating diverse, physically plausible manipulation tasks to enhance Vision-Language-Action model pre-training</p>
+            <div class="hero-image fade-in">
+                <img src="./static/images/teaser.jpg" alt="RoboGene Framework Overview">
+            </div>
+        </div>
+    </section>
+
+    <section id="abstract">
+        <div class="container fade-in">
+            <h2>Abstract</h2>
+            <div class="abstract-card">
+                <p>The pursuit of general-purpose robotic manipulation is hindered by the scarcity of diverse, real-world interaction data. Unlike data collection from the web in vision or language, robotic data collection is an active process incurring prohibitive physical costs.</p>
+                <p>Existing manual methods are unscalable and biased toward common tasks. To address this, we introduce <strong>RoboGene</strong>, an agentic framework designed to automate the generation of diverse, physically plausible manipulation tasks across single-arm, dual-arm, and mobile robots.</p>
+                <p>RoboGene integrates three core components: diversity-driven sampling, self-reflection mechanisms, and human-in-the-loop refinement. We conduct datasets of 18k trajectories and introduce novel metrics to assess task quality and diversity.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="system-demo">
+        <div class="container fade-in">
+            <video style="width:100%; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-lg);" controls playsinline>
+                <source src="./static/videos/tga/video_lossless.mp4" type="video/mp4">
+            </video>
+        </div>
+    </section>
+
+    <section id="methodology">
+        <div class="container fade-in">
+            <h2>Methodology</h2>
+            <div style="text-align: center;">
+                <img src="./static/images/method.jpg" alt="RoboGene Method Overview" class="overview-image">
+            </div>
+            <div class="method-grid">
+                <div class="method-card">
+                    <span class="method-card-number">STAGE 01</span>
+                    <h3>Diversity-Driven Sampling</h3>
+                    <p>Implements LFU strategy to explore task space comprehensively, ensuring coverage of edge cases often overlooked by manual curation.</p>
+                </div>
+                <div class="method-card">
+                    <span class="method-card-number">STAGE 02</span>
+                    <h3>Self-Reflection Validation</h3>
+                    <p>Enforces physical constraints through simulation, filtering out infeasible trajectories and ensuring tasks are executable.</p>
+                </div>
+                <div class="method-card">
+                    <span class="method-card-number">STAGE 03</span>
+                    <h3>Human-in-the-Loop</h3>
+                    <p>Continuous refinement through human feedback, enabling the system to adapt to specific robot embodiments.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="experiments">
+        <div class="container fade-in">
+            <h2>Experimental Setup</h2>
+            <img src="./static/images/hardware.jpg" alt="Hardware Setup" class="experiment-image" style="width:100%; border-radius:20px; margin-bottom:2rem;">
+            <p style="text-align: center; margin-inline: auto;">Evaluated across multiple robot platforms including single-arm, dual-arm manipulators, and mobile manipulators.</p>
+            <div class="experiment-stats">
+                <div class="stat-card"><span class="stat-number">18k+</span><span class="stat-label">Trajectories Collected</span></div>
+                <div class="stat-card"><span class="stat-number">3</span><span class="stat-label">Robot Platforms</span></div>
+                <div class="stat-card"><span class="stat-number">300+</span><span class="stat-label">Manipulation Tasks</span></div>
+                <div class="stat-card"><span class="stat-number">2x</span><span class="stat-label">Better than Baselines</span></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="diverse-tasks">
+        <div class="container fade-in">
+            <h2>Diverse Real-World Tasks</h2>
+            <div class="video-grid mode-3x3">
+                <div class="video-card"><video src="./static/videos/tga/demo1.mov" autoplay loop muted playsinline></video></div>
+                <div class="video-card"><video src="./static/videos/tga/demo2.mov" autoplay loop muted playsinline></video></div>
+                <div class="video-card"><video src="./static/videos/tga/demo3.mov" autoplay loop muted playsinline></video></div>
+                <div class="video-card"><video src="./static/videos/tga/demo4.mov" autoplay loop muted playsinline></video></div>
+                <div class="video-card"><video src="./static/videos/tga/demo5.mov" autoplay loop muted playsinline></video></div>
+                <div class="video-card"><video src="./static/videos/tga/demo6.mov" autoplay loop muted playsinline></video></div>
+                <div class="video-card"><video src="./static/videos/tga/demo7.mov" autoplay loop muted playsinline></video></div>
+                <div class="video-card"><video src="./static/videos/tga/demo8.mov" autoplay loop muted playsinline></video></div>
+                <div class="video-card"><video src="./static/videos/tga/demo9.mov" autoplay loop muted playsinline></video></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="results">
+        <div class="container fade-in">
+            <h2>Downstream Fine-tuning Performance</h2>
+            <p style="text-align: center; margin-inline: auto; margin-bottom: 3rem;">Quantitative assessment of pre-training efficacy and real-world execution demonstrations.</p>
+            
+            <div style="text-align:center; margin-bottom:4rem;">
+                <h3>Pre-training Efficacy</h3>
+                <img src="./static/images/results.jpg" alt="Results Chart" class="overview-image" style="max-width:900px; margin-top:2rem;">
+            </div>
+
+            <div class="video-grid mode-2x2">
+                <div class="video-card"><video src="./static/videos/tga/skewers.mov" autoplay loop muted playsinline></video><p>Task: Grill Skewers</p></div>
+                <div class="video-card"><video src="./static/videos/tga/weigh.MOV" autoplay loop muted playsinline></video><p>Task: Weigh beakers</p></div>
+                <div class="video-card"><video src="./static/videos/tga/blocks.MOV" autoplay loop muted playsinline></video><p>Task: Build Blocks</p></div>
+                <div class="video-card"><video src="./static/videos/tga/oils.MOV" autoplay loop muted playsinline></video><p>Task: Lubricate Gears</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="generalization">
+        <div class="container fade-in">
+            <h2 style="display:block; text-align:center; margin-bottom:3rem;">Zero-Shot Generalization & Robustness Analysis</h2>
+            <div class="mixed-layout">
+                <div class="chart-card">
+                    <img src="./static/images/radarchart.png" alt="Radar Chart">
+                    <div style="margin-top:1rem; font-size:0.9rem; color:var(--text-secondary);">
+                        <strong>Figure: Generalization Evaluation.</strong> Compare RoboGene (Red) against baselines across six categories.
+                    </div>
+                </div>
+                <div class="video-grid-mini">
+                    <div class="video-card small"><video src="./static/videos/tga/gen_novel_obj.mp4" autoplay loop muted playsinline></video><p>Novel Objects</p></div>
+                    <div class="video-card small"><video src="./static/videos/tga/gen_illumination.mp4" autoplay loop muted playsinline></video><p>Illumination</p></div>
+                    <div class="video-card small"><video src="./static/videos/tga/gen_distractors.mp4" autoplay loop muted playsinline></video><p>Distractors</p></div>
+                    <div class="video-card small"><video src="./static/videos/tga/gen_background.mp4" autoplay loop muted playsinline></video><p>Background</p></div>
+                    <div class="video-card small"><video src="./static/videos/tga/gen_instruction.mp4" autoplay loop muted playsinline></video><p>Instruction</p></div>
+                    <div class="video-card small"><video src="./static/videos/tga/gen_indistribution.mov" autoplay loop muted playsinline></video><p>In-Distribution</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="padding: 4rem 0; background: var(--bg-secondary); text-align: center; border-top: 1px solid var(--border-color);">
+        <div class="container">
+            <p style="font-weight:600;">RoboGene Project | Anonymous Submission</p>
+            <!-- <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">A diversity-driven agentic framework for automated robotic task generation</p> -->
+        </div>
+    </footer>
+
+    <script>
+        // 观察者模式触发渐显动画
+        const obs = new IntersectionObserver((es) => {
+            es.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+    </script>
+</body>
+</html>
